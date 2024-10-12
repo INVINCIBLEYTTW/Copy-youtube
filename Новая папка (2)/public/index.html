@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Gallery</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Video Gallery</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="video/*">
+            <input type="submit" value="Upload">
+        </form>
+        <h2>Videos</h2>
+        <ul id="video-list"></ul>
+    </div>
+
+    <script>
+        function loadVideos() {
+            fetch('/videos')
+                .then(response => response.json())
+                .then(files => {
+                    const videoList = document.getElementById('video-list');
+                    videoList.innerHTML = ''; // Очистите список перед обновлением
+                    files.forEach(file => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <video width="320" height="240" controls>
+                                <source src="/vid/${file}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <p>${file}</p>
+                            <form class="report-form" onsubmit="reportVideo(event, '${file}')">
+                                <label for="reason">Report reason:</label>
+                                <select name="reason" required>
+                                    <option value="Inappropriate content">Inappropriate content</option>
+                                    <option value="Copyright infringement">Copyright infringement</option>
+                                    <option value="Spam">Spam</option>
+                                </select>
+                                <input type="submit" value="Report">
+                            </form>
+                        `;
+                        videoList.appendChild(li);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading videos:', error);
+                    alert('Произошла ошибка при загрузке списка видео.');
+                });
+        }
+
+        function reportVideo(event, fileName) {
+            event.preventDefault();
+            const form = event.target;
+            const reason = form.reason.value;
+            fetch('/report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ fileName, reason })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            })
+            .catch(error => {
+                console.error('Error reporting video:', error);
+                alert('Произошла ошибка при отправке жалобы.');
+            });
+        }
+
+        // Загрузите список видео при загрузке страницы
+        loadVideos();
+    </script>
+</body>
+</html>
